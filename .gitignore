@@ -1,0 +1,5 @@
+
+.DS_Store
+
+# don't upload copyrighted test material
+*.mp4

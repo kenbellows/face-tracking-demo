@@ -1,36 +1,82 @@
 'use strict'
 
-const video = document.createElement('video'),
-    canvas = document.getElementById('canvas'),
+const canvas = document.getElementById('canvas'),
     ctx = canvas.getContext('2d'),
     workCanvas = document.createElement('canvas'),
     workCtx = workCanvas.getContext('2d'),
-    goBtn = document.getElementById('go'),
+    webcamBtn = document.getElementById('webcam'),
+    obamaBtn = document.getElementById('obama'),
     stopBtn = document.getElementById('stop'),
+    loadForm = document.getElementById('loadVid'),
+    videoUrl = document.getElementById('videoUrl'),
     faceDetector = new FaceDetector
 
+let video, stop
 
-goBtn.onclick = () => {
-    goBtn.disabled = true
-    console.log('go!')
+stopBtn.onclick = () => stop && stop()
+
+webcamBtn.onclick = () => {
+    stop && stop()
+    webcamBtn.disabled = true
+    console.log('webcam!')
+
+    video = document.createElement('video')
+
     navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}})
         .then(videoStream => {
             video.srcObject = videoStream
             video.addEventListener('canplay', go)
             video.play()
 
-            stopBtn.onclick = () => {
-                goBtn.disabled = false
+            stop = () => {
+                webcamBtn.disabled = false
                 console.log('stop')
                 for (let track of videoStream.getTracks())
                     track.stop()
             }
         })
         .catch(err => {
-            goBtn.disabled = false
+            webcamBtn.disabled = false
             throw err
         })
 }
+
+obamaBtn.onclick = () => {
+    obamaBtn.disabled = true
+    console.log('obama!')
+
+    loadVideo('fake-obama.mp4')
+        .catch(err => {
+            obamaBtn.disabled = false
+            throw err
+        })
+
+    stop = () => {
+        obamaBtn.disabled = false
+        console.log('stop')
+        video.pause()
+    }
+}
+
+loadForm.onsubmit = e => {
+    e.preventDefault()
+
+    loadVideo(videoUrl.value)
+
+    stop = () => {
+        console.log('stop')
+        video.pause()
+    }
+}
+
+async function loadVideo(url) {
+    stop && stop()
+    video = document.createElement('video')
+    video.src = url
+    video.addEventListener('canplay', go)
+    video.play()
+}
+
 
 function go() {
     canvas.width = video.videoWidth
@@ -106,7 +152,7 @@ function processFace(face, faceIndex) {
     const {x, y, width, height} = boundingBox
     workCtx.strokeRect(x, y, width, height)
 
-    drawHat(width*1.2, height)({x: x+width/2, y: y-height/8})
+    drawHat(width*1.4, height*1.2)({x: x+width/2, y})
 
     let eyeIndex = 0
     for (let landmark of face.landmarks) {
