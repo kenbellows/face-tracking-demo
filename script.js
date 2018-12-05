@@ -11,17 +11,22 @@ const canvas = document.getElementById('canvas'),
     videoUrl = document.getElementById('videoUrl'),
     faceDetector = new FaceDetector
 
-let video, stop
+let video,
+    stop = () => {}
 
-stopBtn.onclick = () => stop && stop()
+function initVideo() {
+    video = document.createElement('video')
+    video.crossOrigin = 'anonymous'
+}
+
+stopBtn.onclick = () => stop()
 
 webcamBtn.onclick = () => {
     stop && stop()
     webcamBtn.disabled = true
     console.log('webcam!')
 
-    video = document.createElement('video')
-
+    initVideo()
     navigator.mediaDevices.getUserMedia({video: {facingMode: 'user'}})
         .then(videoStream => {
             video.srcObject = videoStream
@@ -70,8 +75,8 @@ loadForm.onsubmit = e => {
 }
 
 async function loadVideo(url) {
-    stop && stop()
-    video = document.createElement('video')
+    stop()
+    initVideo()
     video.src = url
     video.addEventListener('canplay', go)
     video.play()
@@ -87,7 +92,7 @@ function go() {
 }
 
 
-const fps = 60,
+const fps = 80,
     interval = 1000/fps
 let now,
     then = Date.now(),
@@ -119,15 +124,15 @@ async function detectFaces() {
 
 ////////////////
 
-const drawImgAtCenter = src => (width, height) => {
+const drawImgAtCenter = src => {
     const img = new Image
     img.src = src
-    return ({x, y}) =>
+    return (x, y, width, height) =>
         workCtx.drawImage(img, x - width/2, y - height/2, width, height)
 }
 
 const
-    drawDonut = drawImgAtCenter('media/donut.png')(50, 50),
+    drawDonut = drawImgAtCenter('media/donut.png'),
     drawHat = drawImgAtCenter('media/yellow-rain-hat.png'),
     recents = [],
     maxRecents = 5
@@ -152,9 +157,9 @@ function processFace(face, faceIndex) {
     const {x, y, width, height} = boundingBox
     workCtx.strokeRect(x, y, width, height)
 
-    drawHat(width*1.4, height*1.2)({x: x+width/2, y})
+    drawHat(x+width/2, y, width*1.4, height*1.2)
 
-    let eyeIndex = 0
+    let eyes = []
     for (let landmark of face.landmarks) {
         if (landmark.type === 'mouth') {
             workCtx.strokeStyle = 'red'
@@ -172,15 +177,19 @@ function processFace(face, faceIndex) {
             workCtx.strokeRect(loc.x-(size/2), loc.y-(size/2), size, size)
         }
         else if (landmark.type === 'eye') {
-            const recentEyes = recent.eyes[eyeIndex++]
-            recentEyes.push(landmark.locations[0])
-            if (recentEyes.length > maxRecents) recentEyes.shift()
-            const loc = {
-                x: recentEyes.reduce((x, eye) => x + eye.x, 0)/recentEyes.length,
-                y: recentEyes.reduce((y, eye) => y + eye.y, 0)/recentEyes.length
-            }
-
-            drawDonut(loc)
+            eyes.push(landmark.locations[0])
         }
     }
+    const eyeSize = Math.round(Math.sqrt(Math.pow(eyes[1].x-eyes[0].x, 2) + Math.pow(eyes[1].y - eyes[0].y, 2)) * 0.75)
+    eyes.forEach((eye, eyeIndex) => {
+        const recentEyes = recent.eyes[eyeIndex++]
+        recentEyes.push(eye)
+        if (recentEyes.length > maxRecents) recentEyes.shift()
+        const loc = {
+            x: recentEyes.reduce((x, eye) => x + eye.x, 0)/recentEyes.length,
+            y: recentEyes.reduce((y, eye) => y + eye.y, 0)/recentEyes.length
+        }
+
+        drawDonut(loc.x, loc.y, eyeSize, eyeSize)
+    })
 }
