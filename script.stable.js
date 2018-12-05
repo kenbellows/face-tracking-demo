@@ -80,8 +80,8 @@ const drawImgAtCenter = src => (width, height) => {
 }
 
 const
-    drawDonut = drawImgAtCenter('donut.png')(50, 50),
-    drawHat = drawImgAtCenter('yellow-rain-hat.png')
+    drawDonut = drawImgAtCenter('media/donut.png')(50, 50),
+    drawHat = drawImgAtCenter('media/yellow-rain-hat.png')
 
 
 function processFace(face) {

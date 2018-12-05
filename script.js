@@ -45,7 +45,7 @@ obamaBtn.onclick = () => {
     obamaBtn.disabled = true
     console.log('obama!')
 
-    loadVideo('fake-obama.mp4')
+    loadVideo('media/fake-obama.mp4')
         .catch(err => {
             obamaBtn.disabled = false
             throw err
@@ -127,8 +127,8 @@ const drawImgAtCenter = src => (width, height) => {
 }
 
 const
-    drawDonut = drawImgAtCenter('donut.png')(50, 50),
-    drawHat = drawImgAtCenter('yellow-rain-hat.png'),
+    drawDonut = drawImgAtCenter('media/donut.png')(50, 50),
+    drawHat = drawImgAtCenter('media/yellow-rain-hat.png'),
     recents = [],
     maxRecents = 5
 
