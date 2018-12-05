@@ -64,6 +64,7 @@ async function detectFaces() {
     const faces = await faceDetector.detect(video)
     faces.forEach(processFace)
 
+    //ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(workCanvas, 0, 0)
 }
 
@@ -82,15 +83,21 @@ const drawImgAtCenter = src => (width, height) => {
 const
     drawDonut = drawImgAtCenter('donut.png')(50, 50),
     drawHat = drawImgAtCenter('yellow-rain-hat.png'),
-    recent = [],
-    numRecents = 15
+    recents = [],
+    maxRecents = 5
 
 
 function processFace(face, faceIndex) {
-    if (faceIndex+1 > recent.length) recent.push({face: [], eyes: [[], []], mouth: []})
-    const recentFaces = recent[faceIndex].face
+    if (faceIndex+1 > recents.length) recents.push({
+        face: [],
+        eyes: [[], []],
+        mouth: []
+    })
+    const recent = recents[faceIndex]
+
+    const recentFaces = recent.face
     recentFaces.push(face.boundingBox)
-    if (recentFaces.length > numRecents) recentFaces.shift()
+    if (recentFaces.length > maxRecents) recentFaces.shift()
 
     const boundingBox = {}
     ;['x', 'y', 'width', 'height'].forEach(key => boundingBox[key] = recentFaces.reduce((sum, f) => sum + f[key], 0)/recentFaces.length)
@@ -101,16 +108,33 @@ function processFace(face, faceIndex) {
 
     drawHat(width*1.2, height)({x: x+width/2, y: y-height/8})
 
+    let eyeIndex = 0
     for (let landmark of face.landmarks) {
         if (landmark.type === 'mouth') {
             workCtx.strokeStyle = 'red'
-            for (let loc of landmark.locations) {
-                const size = 10
-                workCtx.strokeRect(loc.x-(size/2), loc.y-(size/2), size, size)
+            const size = 10
+
+            const recentMouths = recent.mouth
+            recentMouths.push(landmark.locations[0])
+            if (recentMouths.length > maxRecents) recentMouths.shift()
+
+            const loc = {
+                x: recentMouths.reduce((x, mouth) => x + mouth.x, 0)/recentMouths.length,
+                y: recentMouths.reduce((y, mouth) => y + mouth.y, 0)/recentMouths.length
             }
+
+            workCtx.strokeRect(loc.x-(size/2), loc.y-(size/2), size, size)
         }
         else if (landmark.type === 'eye') {
-            drawDonut(landmark.locations[0])
+            const recentEyes = recent.eyes[eyeIndex++]
+            recentEyes.push(landmark.locations[0])
+            if (recentEyes.length > maxRecents) recentEyes.shift()
+            const loc = {
+                x: recentEyes.reduce((x, eye) => x + eye.x, 0)/recentEyes.length,
+                y: recentEyes.reduce((y, eye) => y + eye.y, 0)/recentEyes.length
+            }
+
+            drawDonut(loc)
         }
     }
 }
